@@ -32,7 +32,7 @@ The script does the following:
 - Accepts `.xlsx`, `.csv`, or `.txt` files
 - Loads into a `pandas DataFrame (df)`
 - Prints `df.info()` and First 5 rows
-- Hard stop if no file is selected.
+- Hard stop if no file is selected
 
 2. Base mass retrieval (optional). If enabled:
 
@@ -47,38 +47,38 @@ The script does the following:
 3. Unknown feature renaming (optional). If enabled:
 
 - User defines: Keyword identifying unknowns (`Feature`, `Peak`, etc.) and two identifier columns (e.g., `"R.I. calc"`, `"Med RT2 (sec)"`)
-- Renames: `Feature → Feature_<ID1>_<ID2>`.
-- ID formatting: `ID1 → integer`, `ID2 → 3 decimal float`.
+- Renames: `Feature → Feature_<ID1>_<ID2>`
+- ID formatting: `ID1 → integer`, `ID2 → 3 decimal float`
 
 4. Peak Area Cutoff Estimation (optional, exploratory QC step). The script includes an advanced statistical module for estimating a cutoff threshold that separates real chromatographic peaks from pseudo/noise peaks based on peak area distributions. This step is interactive and must be explicitly enabled by the user.
 
-- User prompt: `Would you like to perform real vs. pseudo peak cutoff estimation? 0 = No 1 = Yes`. If `0` → section is skipped entirely; if `1` → full cutoff estimation workflow is executed; `Invalid input` → skipped with warning.
+- User prompt: `Would you like to perform real vs. pseudo peak cutoff estimation? 0 = No 1 = Yes`. If `0` → section is skipped entirely; if `1` → full cutoff estimation workflow is executed; `Invalid input` → skipped with warning
 - Uses all detected area columns (`area_columns`)
 - Flattens values into a single vector `area_values = df[area_columns].values.flatten()`
 - Cleans the data: Removes NaN values and removes zeroes (assumed to represent absence of peaks)
 - Computes distribution summary: Mean, standard deviation, quartiles (25%, 50%, 75%), high percentiles (90%, 95%, 99%)
 - Printed to console for inspection: `pd.Series(area_values).describe(...)`
-- Histogram visualization (log10 scale): (i) Applies log10 transformation `log_area_values = np.log10(area_values)` and (ii) plots histogram (density-normalized) to reveal bimodal structure (`pseudo vs. real peaks`) and identify approximate separation region.
-- Kernel Density Estimation (KDE): (i) Performs non-parametric density estimation with `gaussian_kde(log_area, bw_method=0.2)`; (ii) detects local minima in KDE curve that represents valley between low-intensity (noise/pseudo peaks) and high-intensity (true peaks); (iii) If minimum exists, defines `cutoff_kde_log10` and `cutoff_kde` (converted back to linear scale); (iv) If no minimum found, KDE cutoff is set to `None` and warning is printed.
-- Gaussian Mixture Model (GMM): (i) Fits a 2-component Gaussian Mixture Model with `GaussianMixture(n_components=2)`; (ii) Assumes: Component 1 → pseudo peaks (low mean); Component 2 → real peaks (high mean); (iii) Extracts: Means (μ1, μ2), Standard deviations (σ1, σ2); (iv) Computes analytical intersection point between the two Gaussians; This represents the GMM-based cutoff; (v) Outputs: `cutoff_gmm_log10` and `cutoff_gmm`.
-- Combined cutoff definition. The script defines three cutoff values: (i) `cutoff_high` (recommended, conservative): `max(GMM, KDE)`; (ii) cutoff_low: `min(GMM, KDE)`; (iii) cutoff_mean: Average of GMM and KDE cutoffs; special case: if KDE fails, all three cutoffs default to `cutoff_gmm`.
-- Visualization of results. A combined diagnostic plot is generated showing: Histogram (log10 peak areas), KDE curve, two GMM component distributions (pseudo peaks and real peaks), vertical lines for GMM cutoff, KDE cutoff (if available), and mean cutoff. This visualization provides a clear analytical basis for selecting filtering thresholds.
-- Output and usage. Cutoff values are printed to console, but not automatically enforced downstream. Intended usage: manual inspection, user-defined filtering in later processing steps, and parameter tuning for feature selection workflows.
+- Histogram visualization (log10 scale): (i) Applies log10 transformation `log_area_values = np.log10(area_values)` and (ii) plots histogram (density-normalized) to reveal bimodal structure (`pseudo vs. real peaks`) and identify approximate separation region
+- Kernel Density Estimation (KDE): (i) Performs non-parametric density estimation with `gaussian_kde(log_area, bw_method=0.2)`; (ii) detects local minima in KDE curve that represents valley between low-intensity (noise/pseudo peaks) and high-intensity (true peaks); (iii) If minimum exists, defines `cutoff_kde_log10` and `cutoff_kde` (converted back to linear scale); (iv) If no minimum found, KDE cutoff is set to `None` and warning is printed
+- Gaussian Mixture Model (GMM): (i) Fits a 2-component Gaussian Mixture Model with `GaussianMixture(n_components=2)`; (ii) Assumes: Component 1 → pseudo peaks (low mean); Component 2 → real peaks (high mean); (iii) Extracts: Means (μ1, μ2), Standard deviations (σ1, σ2); (iv) Computes analytical intersection point between the two Gaussians; This represents the GMM-based cutoff; (v) Outputs: `cutoff_gmm_log10` and `cutoff_gmm`
+- Combined cutoff definition. The script defines three cutoff values: (i) `cutoff_high` (recommended, conservative): `max(GMM, KDE)`; (ii) cutoff_low: `min(GMM, KDE)`; (iii) cutoff_mean: Average of GMM and KDE cutoffs; special case: if KDE fails, all three cutoffs default to `cutoff_gmm`
+- Visualization of results. A combined diagnostic plot is generated showing: Histogram (log10 peak areas), KDE curve, two GMM component distributions (pseudo peaks and real peaks), vertical lines for GMM cutoff, KDE cutoff (if available), and mean cutoff. This visualization provides a clear analytical basis for selecting filtering thresholds
+- Output and usage. Cutoff values are printed to console, but not automatically enforced downstream. Intended usage: manual inspection, user-defined filtering in later processing steps, and parameter tuning for feature selection workflows
 
 5. Spectrum conversion:
 
 - Converts Sync2D spectrum format `(77|871.48)(156|1000.00)` to `77:871.48 156:1000.00`
 - Renames: `"Spectrum"` → `"Spectrum_Sync2D"`
-- Inserts new `"Spectrum"` column. User specifies insertion position.
+- Inserts new `"Spectrum"` column. User specifies insertion position
 
 6. Feature merging (unknowns). If enabled:
 
 - Targets features matching unknown keyword
 - Groups features based on `RT1 tolerance` (±10 sec default), `RT2 tolerance` (±0.5 sec default), optional `Base mass equality`, `spectral similarity` using either `"DISCO"` (mean-centered cosine) or `NDP"` (dot product) with a default similarity threshold of `0.7`
 - Merging logic: Identify groups → Keep feature with highest total area → Sum all sample areas into main feature → Drop others → Track merged IDs
-- Outputs: Merged dataset and optional merged/unmerged export.
+- Outputs: Merged dataset and optional merged/unmerged export
 
-7. Detection frequency (DF) & DN calculations (optional). If enabled:
+7. DN & DF calculations (optional). If enabled:
 
 - Uses predefined column groups: UMU blanks, field blanks, country-specific samples
 - Calculates: `"DN"` = count of detections above cutoff, `"DF (%)"` = frequency %, per-country metrics `"DN CZ"`, `"DF CZ (%)"`, etc.
@@ -86,32 +86,33 @@ The script does the following:
 8. Feature prioritization (optional). Based on:
 
 - Area ratios vs. blanks
-- Detection frequency
+- DF
 - Unknown feature behavior
 - Country-level DF
-- Outputs: `"Priority"` (0, 1, 2), `"Priority_1–4"` (step-wise logic), `"Reason"` (traceable logic), `"Ranking"`: `2 = keep`, `1 = borderline`, `0 = delete`.
+- Outputs: `"Priority"` (0, 1, 2), `"Priority_1–4"` (step-wise logic), `"Reason"` (traceable logic), `"Ranking"`: `2 = keep`, `1 = borderline`, `0 = delete`
+- For more information, see separate section `Feature prioritization`
 
 9. LOD specification & cutoff selection. If enabled:
 
 - Uses: Precomputed cutoffs (if available) OR Manual user input
-- Populates `"LOD"` column.
+- Populates `"LOD"` column
 
 10. Replace small peak areas. If enabled:
 
 - Preserves original data: Creates `*_INIT` columns
 - Replaces: `Area < cutoff` OR `NA` → `-cutoff`
 - Applies to all sample columns
-- Rounds values to integers.
+- Rounds values to integers
 
 11. Retention index processing (optional). If enabled:
 
 - Populates `"R.I. lib"` from `"RI_Semi-Std_NP"`, `"RI_Std_NP"`, `"RI_AI"`
 - Adds `"R.I. source"`
-- Computes `R.I. delta = R.I. calc − R.I. lib`.
+- Computes `R.I. delta = R.I. calc − R.I. lib`
 
 12. Output generation.
 
-- Full processed dataset: `*_Prcssd.xlsx`.
+- Full processed dataset: `*_Prcssd.xlsx`
 
 13. Applies extensive Excel formatting using `openpyxl`:
 
@@ -119,15 +120,15 @@ The script does the following:
 - Conditional formatting (e.g., intensity thresholds)
 - Column width adjustments
 - Header formatting
-- Freeze panes and zoom.
+- Freeze panes and zoom
 
 ## Prerequisites
 
 Before using the script, several applications/tools have to be installed:
 
-1. Visual Studio Code; https://code.visualstudio.com/download.
-2. Python 3; https://www.python.org/downloads/windows/.
-3. Python Extension in Visual Studio Code > Extensions (`Ctrl + Shift + X`) > Search “python” > Press `Install`.
+1. Visual Studio Code; https://code.visualstudio.com/download
+2. Python 3; https://www.python.org/downloads/windows/
+3. Python Extension in Visual Studio Code > Extensions (`Ctrl + Shift + X`) > Search “python” > Press `Install`
 
 Then, the required packages, i.e. `pandas`, `numpy`, `matplotlib`, `scikit-learn`, `scipy`, and `openpyxl`, must be installed as follows:
 Visual Studio Code > Terminal > New Terminal > In terminal, type `pip install pandas numpy matplotlib openpyxl scikit-learn scipy` > Press `Enter`.
@@ -138,19 +139,19 @@ To use the script, the following steps must be executed:
 
 1. Run the script:
 
-- Right mouse click anywhere in Visual Studio Code script file > Run Python > Run Python File in Terminal or press `play` button in the top-right corner.
+- Right mouse click anywhere in Visual Studio Code script file > Run Python > Run Python File in Terminal or press `play` button in the top-right corner
 
 2. Select input files:
 
 - A file dialog window will appear
 - Select main dataset (`CSV`, `TXT`, or `Excel` file)
-- Click `Open`.
+- Click `Open`
 
 3. Respond to prompts:
 
 - Enable/disable processing steps
 - Provide column names (if needed)
-- Provide cutoff values (if needed).
+- Provide cutoff values (if needed)
 
 ## Notes and recommendations
 
@@ -161,17 +162,17 @@ To use the script, the following steps must be executed:
 - `"Name"`
 - `"Quant mass"`
 - Multiple sample area columns
-- Strongly required: `"Spectrum"` or `"Spectrum_Sync2D"` ,`"Med RT1 (sec)"`, `"Med RT2 (sec)"` (for merging), `"Area ave."`, 
+- Strongly required: `"Spectrum"` or `"Spectrum_Sync2D"` ,`"Med RT1 (sec)"`, `"Med RT2 (sec)"` (for merging), `"Area ave."`
 - Required for advanced features: `"Base mass"` (optional, otherwise computed), `"Keep"` (for prioritization exclusions), `"CL Sync2D"` (priority logic), `"TargetHit"` (priority logic), `"R.I. calc"`
-- Optional but recommended: `"RI_Semi-Std_NP"`, `"RI_Std_NP"`, `"RI_AI"`, `"CAS"`.
+- Optional but recommended: `"RI_Semi-Std_NP"`, `"RI_Std_NP"`, `"RI_AI"`, `"CAS"`
 
-2. Sample area columns
+2. Sample area columns:
 
 - Multiple columns representing samples
 - Used for merging, DF/DN calculations, area filtering
-- Must be numeric or convertible.
+- Must be numeric or convertible
 
-3. Blank columns (hardcoded)- Examples:
+3. Blank columns (hardcoded) - Examples:
 
 - "Blank_01_241112_012"
 - "CZ_FB_01_241112_017"
@@ -180,12 +181,12 @@ These are used in DF calculations and prioritization.
 
 **Key processing dependencies**
 
-Base mass retrieval: `Quant mass, Spectrum`
-Spectrum conversion: `Spectrum`
-Feature merging: `Spectrum, RT1, RT2`
-DF calculations: `Sample + blank columns`
-Prioritization: `Keep, DF columns`
-RI processing: `R.I. calc + RI sources`
+- Base mass retrieval: `Quant mass, Spectrum`
+- Spectrum conversion: `Spectrum`
+- Feature merging: `Spectrum, RT1, RT2`
+- DF calculations: `Sample + blank columns`
+- Prioritization: `Keep, DF columns`
+- RI processing: `R.I. calc + RI sources`
 
 **Limitations**
 
@@ -196,10 +197,71 @@ RI processing: `R.I. calc + RI sources`
 - Computationally expensive for large datasets (spectral comparisons).
 - Partial dependency on user-provided column names.
 - Cutoff estimation assumes bimodal peak area distribution; may fail for unimodal or highly skewed datasets.
-- KDE minimum detection is sensitive to bandwidth (bw_method) and data density.
+- KDE minimum detection is sensitive to bandwidth (`bw_method`) and data density.
 - GMM assumes Gaussian-like distributions and may misrepresent heavy-tailed data.
 - Computation may be slow for very large datasets due to KDE and GMM fitting.
 - Results are not automatically applied — user must manually integrate cutoff into filtering logic.
+
+## Feature prioritization
+
+Feature prioritization was performed using a rule-based framework that integrates DF, signal-to-blank relationships, and contextual metadata. Each feature was assigned a `Priority` score (0–2) and a corresponding `Ranking` category (0–2), accompanied by a `Reason` field documenting the decision pathway.
+
+**Priority Assignment**
+
+`Priority` scores were defined as follows:
+
+- `Priority = 2` (high priority): features with strong analytical evidence and/or confirmed relevance
+- `Priority = 1` (intermediate priority): features with partial or inconclusive support
+- `Priority = 0` (low priority): features likely representing noise, contamination, or insufficient occurrence
+
+The assignment followed a hierarchical decision logic:
+
+1. Exempt Features (Automatic `Priority = 2`):
+
+Features annotated as internal standards (IS), recovery standards (RS), mixtures, confidently identified compounds (confidence levels 1–2), or those with confirmed database hits (target or NORMAN) were directly assigned high priority and excluded from further evaluation.
+
+2. Signal-to-Blank Evaluation:
+
+For non-exempt features, the ratio between sample signal intensities and the mean signal of procedural blanks (`UMU blanks`) was assessed. Only sample intensities exceeding a predefined cutoff were considered.
+A feature was assigned `Priority = 2` if:
+
+- It was detected in at least 10% of samples, and
+- At least 50% of valid sample-to-blank ratios were ≥5.
+
+Otherwise, it was assigned `Priority = 0` at this stage.
+
+3. Unknown Feature Frequency Filter:
+
+For features labeled as unknowns (i.e., containing `“Feature”` in the name), DF was calculated as the percentage of samples with signal above cutoff.
+
+- Features with `DF < 2.5%` were considered sporadic and assigned `Priority = 0`, unless previously elevated.
+- Features with `DF ≥ 2.5%` were retained for further consideration.
+
+4. Country-Specific Detection Rescue:
+
+Features not yet assigned a priority were evaluated for regional prevalence. If the DF within any individual country reached `≥25%`, the feature was assigned `Priority = 2`, reflecting consistent occurrence at a local scale.
+
+5. Fallback Assignment:
+
+Features not meeting any of the above criteria were assigned `Priority = 1`, indicating intermediate relevance.
+
+**Ranking Classification**
+
+Priority scores were translated into three ranking categories:
+
+- `Ranking = 2` (retain): `Priority = 2`
+- `Ranking = 1` (borderline): `Priority = 1`, or unknown features with `DF ≥ 2.5%`
+- `Ranking = 0` (discard): `Priority = 0`
+
+**Reason Annotation**
+
+For each feature, a `Reason` field was generated to document the applied decision rules. This field records:
+
+- Quantitative thresholds (e.g., percentage of ratios `≥5`, DF values)
+- Triggering conditions (e.g., exemption status, country-specific DF)
+- Fallback assignments where no criteria were met
+
+This structured annotation ensures full transparency and traceability of the prioritization process.
 
 ## License
 
