@@ -216,34 +216,22 @@ Feature prioritization was performed using a rule-based framework that integrate
 
 The assignment followed a hierarchical decision logic:
 
-1. Exempt Features (Automatic `Priority = 2`):
+1. Exempt Features (Automatic `Priority = 2`): Features annotated as internal standards (IS), recovery standards (RS), mixtures, confidently identified compounds (confidence levels 1–2), or those with confirmed database hits (target or NORMAN) were directly assigned high priority and excluded from further evaluation.
 
-Features annotated as internal standards (IS), recovery standards (RS), mixtures, confidently identified compounds (confidence levels 1–2), or those with confirmed database hits (target or NORMAN) were directly assigned high priority and excluded from further evaluation.
-
-2. Signal-to-Blank Evaluation:
-
-For non-exempt features, the ratio between sample signal intensities and the mean signal of procedural blanks (`UMU blanks`) was assessed. Only sample intensities exceeding a predefined cutoff were considered.
-A feature was assigned `Priority = 2` if:
+2. Signal-to-Blank Evaluation: For non-exempt features, the ratio between sample signal intensities and the mean signal of procedural blanks (`UMU blanks`) was assessed. Only sample intensities exceeding a predefined cutoff were considered. A feature was assigned `Priority = 2` if:
 
 - It was detected in at least 10% of samples, and
 - At least 50% of valid sample-to-blank ratios were ≥5.
+- Otherwise, it was assigned `Priority = 0` at this stage.
 
-Otherwise, it was assigned `Priority = 0` at this stage.
-
-3. Unknown Feature Frequency Filter:
-
-For features labeled as unknowns (i.e., containing `“Feature”` in the name), DF was calculated as the percentage of samples with signal above cutoff.
+3. Unknown Feature Frequency Filter: For features labeled as unknowns (i.e., containing `“Feature”` in the name), DF was calculated as the percentage of samples with signal above cutoff.
 
 - Features with `DF < 2.5%` were considered sporadic and assigned `Priority = 0`, unless previously elevated.
 - Features with `DF ≥ 2.5%` were retained for further consideration.
 
-4. Country-Specific Detection Rescue:
+4. Country-Specific Detection Rescue: Features not yet assigned a priority were evaluated for regional prevalence. If the DF within any individual country reached `≥25%`, the feature was assigned `Priority = 2`, reflecting consistent occurrence at a local scale.
 
-Features not yet assigned a priority were evaluated for regional prevalence. If the DF within any individual country reached `≥25%`, the feature was assigned `Priority = 2`, reflecting consistent occurrence at a local scale.
-
-5. Fallback Assignment:
-
-Features not meeting any of the above criteria were assigned `Priority = 1`, indicating intermediate relevance.
+5. Fallback Assignment: Features not meeting any of the above criteria were assigned `Priority = 1`, indicating intermediate relevance.
 
 **Ranking Classification**
 
